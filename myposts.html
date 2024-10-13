@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Posts</title>
+    <!-- Firebase App -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+    <!-- Firebase Authentication -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-auth.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+    <!-- Bootstrap CDN for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #15202B;
+        }
+
+        .container {
+            margin-top: 30px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+        h4 {
+            font-size: 16px;
+           text-transform: capitalize;
+            color: #fff;
+        }
+        p{
+            color: #aabbc2;
+            font-size: 11px;
+        }
+
+        .job-item {
+            background-color: #253341;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            transition: transform 0.3s;
+        }
+
+        .job-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .delete-btn {
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* Loading spinner styles */
+        .loader {
+            width: 65px;
+            aspect-ratio: 1;
+            position: relative;
+        }
+
+        .loader:before,
+        .loader:after {
+            content: "";
+            position: absolute;
+            border-radius: 50px;
+            box-shadow: 0 0 0 3px inset #fff;
+            animation: l4 2.5s infinite;
+        }
+
+        .loader:after {
+            animation-delay: -1.25s;
+        }
+
+        @keyframes l4 {
+            0% {
+                inset: 0 35px 35px 0;
+            }
+
+            12.5% {
+                inset: 0 35px 0 0;
+            }
+
+            25% {
+                inset: 35px 35px 0 0;
+            }
+
+            37.5% {
+                inset: 35px 0 0 0;
+            }
+
+            50% {
+                inset: 35px 0 0 35px;
+            }
+
+            62.5% {
+                inset: 0 0 0 35px;
+            }
+
+            75% {
+                inset: 0 0 35px 35px;
+            }
+
+            87.5% {
+                inset: 0 0 35px 0;
+            }
+
+            100% {
+                inset: 0 35px 35px 0;
+            }
+        }
+
+        /* Full-screen loader styles */
+        #loadingContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Alert styles */
+        #alertBox {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .no-jobs {
+            text-align: center;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div id="loadingContainer">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Success Alert Box -->
+    <div id="alertBox">Your post was deleted successfully!</div>
+
+    <div class="container">
+        <h2>Your Job Posts</h2>
+        <ul id="jobList" class="list-unstyled"></ul>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAK-dzBJ9sIwgQJ7iR0Kh_MvOLy7i-F3O0",
+            authDomain: "blog-ad58e.firebaseapp.com",
+            databaseURL: "https://blog-ad58e-default-rtdb.firebaseio.com",
+            projectId: "blog-ad58e",
+            storageBucket: "blog-ad58e.appspot.com",
+            messagingSenderId: "921348005047",
+            appId: "1:921348005047:web:2d9797dae380482aa40132",
+            measurementId: "G-WRESM9JHSG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        function loadJobs() {
+            // Show loading spinner
+            document.getElementById('loadingContainer').style.display = 'flex';
+
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    database.ref('jobs').orderByChild('uploader').equalTo(user.uid).once('value')
+                        .then((snapshot) => {
+                            const jobList = document.getElementById('jobList');
+                            jobList.innerHTML = ''; // Clear existing jobs
+
+                            snapshot.forEach((jobSnapshot) => {
+                                const jobData = jobSnapshot.val();
+                                const jobId = jobSnapshot.key;
+
+                                const listItem = document.createElement('li');
+                                listItem.className = 'job-item';
+                                listItem.onclick = () => window.location.href = `jobDetail.html?jobId=${jobId}`;
+
+                                listItem.innerHTML = `
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h4>${jobData.title}</h4>
+                                            <p>Salary ${jobData.salary}ETB</p>
+                                        </div>
+                                        <button class="delete-btn" onclick="deleteJob('${jobId}'); event.stopPropagation();">Delete</button>
+                                    </div>
+                                `;
+                                jobList.appendChild(listItem);
+                            });
+
+                            if (!snapshot.exists()) {
+                                jobList.innerHTML = '<p class="no-jobs">You have no job posts yet.</p>';
+                            }
+                        })
+                        .catch((error) => alert('Error loading jobs: ' + error.message))
+                        .finally(() => {
+                            // Hide loading spinner
+                            document.getElementById('loadingContainer').style.display = 'none';
+                        });
+                } else {
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
+        function deleteJob(jobId) {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    database.ref('jobs/' + jobId).remove()
+                        .then(() => {
+                            // Show success alert
+                            showAlert('Your post was deleted successfully!');
+                            loadJobs();
+                        })
+                        .catch((error) => alert('Error deleting job: ' + error.message));
+                }
+            });
+        }
+
+        function showAlert(message) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.textContent = message;
+            alertBox.style.display = 'block';
+
+            // Hide alert after 3 seconds
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 3000);
+        }
+
+        window.onload = loadJobs;
+    </script>
+    <!-- Bootstrap JS (Optional for more functionality) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

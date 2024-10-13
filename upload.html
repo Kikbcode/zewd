@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Upload</title>
+    <!-- Firebase App -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+    <!-- Firebase Authentication -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-auth.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+    <!-- Firebase Storage -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-storage.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #15202B;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .upload-container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 90%;
+            max-width: 270px;
+            margin: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        input[type="text"], textarea {
+            width: 90%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 12px;
+            transition: border 0.3s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        .blocked-message {
+            text-align: center;
+            margin: 50px;
+            font-size: 20px;
+            color: red;
+        }
+
+        a {
+            text-decoration: none;
+            color: #007bff;
+            text-align: center;
+            display: block;
+            margin-top: 20px;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width:575px) {
+            .upload-container {
+                padding: 29px;
+                width: 100%;
+                max-width: 240px;
+                margin: 10px;
+            }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            font-size: 24px;
+            color: #e74c3c;
+        }
+
+        .modal-content p {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #closeModalBtn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #closeModalBtn:hover {
+            background-color: #0056b3;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <h2>Upload Job</h2>
+        <form id="job-form">
+            <div class="form-group">
+                <label for="jobTitle">Job Title:</label>
+                <input type="text" id="jobTitle" name="jobTitle" required />
+            </div>
+            <div class="form-group">
+                <label for="jobDescription">Job Description:</label>
+                <textarea id="jobDescription" name="jobDescription" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="salary">Salary:</label>
+                <input type="text" id="salary" name="salary" required />
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Upload Job" />
+            </div>
+        </form>
+    </div>
+    <a href="messages.html">View Messages</a>
+
+    <!-- Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Success!</h3>
+            <p>Job Uploaded Successfully!</p>
+            <button id="closeModalBtn" onclick="redirectHome()">Go to Home</button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAK-dzBJ9sIwgQJ7iR0Kh_MvOLy7i-F3O0",
+            authDomain: "blog-ad58e.firebaseapp.com",
+            databaseURL: "https://blog-ad58e-default-rtdb.firebaseio.com",
+            projectId: "blog-ad58e",
+            storageBucket: "blog-ad58e.appspot.com",
+            messagingSenderId: "921348005047",
+            appId: "1:921348005047:web:2d9797dae380482aa40132",
+            measurementId: "G-WRESM9JHSG"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        function loadProfile() {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // Fetch user profile
+                    database.ref('users/' + user.uid).once('value')
+                        .then((snapshot) => {
+                            const data = snapshot.val();
+
+                            // Check if user is blocked
+                            if (data.isBlocked) {
+                                document.body.innerHTML = `
+                                    <div class="blocked-message">
+                                        <h2>You are blocked. You don't follow our policy.</h2> 
+                                        <a href="home.html">Go Back to Home</a>
+                                    </div>
+                                `;
+                            }
+                        })
+                        .catch((error) => alert('Error loading profile: ' + error.message));
+                } else {
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
+        document.getElementById('job-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const jobTitle = document.getElementById('jobTitle').value;
+            const jobDescription = document.getElementById('jobDescription').value;
+            const salary = document.getElementById('salary').value;
+
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // Check if user is blocked again before uploading
+                    database.ref('users/' + user.uid).once('value')
+                        .then((snapshot) => {
+                            const data = snapshot.val();
+                            if (data.isBlocked) {
+                                alert('Your account is blocked. You cannot upload jobs.');
+                                return; // Prevent upload
+                            }
+
+                            // Save job to database with timestamp
+                            const jobData = {
+                                title: jobTitle,
+                                description: jobDescription,
+                                salary: salary,
+                                uploader: user.uid,
+                                timestamp: Date.now() // Current time in milliseconds
+                            };
+
+                            database.ref('jobs').push(jobData)
+                                .then(() => {
+                                    showModal(); // Show modal notification
+                                })
+                                .catch((error) => alert('Error uploading job: ' + error.message));
+                        });
+                }
+            });
+        });
+
+        // Function to show modal
+        function showModal() {
+            document.getElementById('successModal').style.display = 'flex';
+        }
+
+        // Function to close modal
+        function closeModal() {
+            document.getElementById('successModal').style.display = 'none';
+        }
+
+        // Redirect to home
+        function redirectHome() {
+            closeModal();
+            window.location.href = 'home.html';
+        }
+
+        // Load profile on page load
+        loadProfile();
+    </script>
+</body>
+</html>

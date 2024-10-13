@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace Search</title>
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@latest/css/boxicons.min.css">
+    <!-- Firebase App -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-auth.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+    <!-- Font Awesome Icons -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #15202B;
+            color: #ffffff;
+            padding: 20px;
+            margin: 0;
+        }
+ 
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        /* Search Bar */
+        .search-bar {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .search-bar input {
+            width: 300px;
+            padding: 11px 15px;
+            border: 1px solid #ffffff;
+            border-radius: 30px 0 0 30px;
+            outline: none;
+            color: #000;
+        }
+        .search-bar button {
+            background-color: #1DA1F2;
+            color: white;
+            border: none;
+            padding: 11px 15px;
+            cursor: pointer;
+            border-radius: 0 30px 30px 0;
+        }
+        .search-bar button i {
+            font-size: 18px;
+        }
+       
+        /* Loading Spinner */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .loading-spinner img {
+            width: 50px;
+            height: 50px;
+        }
+        .marketplace-container {
+        max-width: 1200px;
+        margin: 0 auto;
+      
+      
+    }
+    .product-grid {
+        display: flex;
+        flex-wrap: wrap ;
+        gap: 10px;
+    justify-content: space-between;
+    }
+    .product-card {
+        background-color: #253341;
+        border-radius: 5px;
+        padding: 10px;
+        width: 200px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .product-card:hover {
+        transform: scale(1.02);
+    }
+    .product-card img {
+        background: #2e3e4d;
+
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        object-position: center;
+        border-radius: 5px;
+    }
+    .product-card h3, .product-card p {
+        margin: 5px 0;
+    }
+    .product-card p{
+        color: #aabbc2;
+        font-size: 13px;
+    }
+    .product-card h3{
+        color: #ffffff;
+        text-transform: capitalize;
+    }
+    .call-button {
+        display: block;
+        margin-top: 10px;
+        background-color: #1DA1F2;
+        color: #fff;
+        text-align: center;
+        padding: 5px;
+        border-radius: 5px;
+        text-decoration: none;
+    }
+   /* Responsive styles */
+   @media (max-width: 800px) {
+            .product-card {
+                width: 220px;
+                margin: 5px;
+              
+            }
+        }
+        @media (max-width: 600px) {
+            .product-card {
+                width: 150px;
+                margin: 5px;
+              
+            }
+           
+        }
+   @media (max-width: 500px) {
+            .product-card {
+                width: 150px;
+                margin: 5px;
+              
+            }
+            h3{
+                font-size: 15px;
+                text-transform: capitalize;
+            }
+           .pay{
+                font-size: 11px;
+
+            }
+        }
+        @media (max-width: 430px) {
+            .product-card {
+                width: 160px;
+                margin: 0px;
+              
+            }
+        
+        }
+        @media (max-width: 420px) {
+            .product-card {
+                width: 130px;
+                margin: 5px;
+              
+            }
+        
+        }
+        @media (max-width: 395px) {
+            .product-card {
+                width: 120px;
+             
+              
+            }
+        
+        }
+        @media (max-width: 345px) {
+            .product-card {
+                width: 110px;
+               
+              
+            }
+        
+        }
+
+        
+   
+
+
+    </style>
+</head>
+<body>
+    <div class="marketplace-container">
+
+        
+        <!-- Search Bar with Icon -->
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search products...">
+            <button onclick="searchProducts()">
+               <i class='bx bx-search-alt-2' ></i>
+            </button>
+        </div>
+        
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="loading-spinner">
+            <img src="https://i.gifer.com/ZZ5H.gif" alt="Loading...">
+        </div>
+
+        <!-- Product Grid -->
+        <div id="productGrid" class="product-grid"></div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAK-dzBJ9sIwgQJ7iR0Kh_MvOLy7i-F3O0",
+            authDomain: "blog-ad58e.firebaseapp.com",
+            databaseURL: "https://blog-ad58e-default-rtdb.firebaseio.com",
+            projectId: "blog-ad58e",
+            storageBucket: "blog-ad58e.appspot.com",
+            messagingSenderId: "921348005047",
+            appId: "1:921348005047:web:2d9797dae380482aa40132",
+            measurementId: "G-WRESM9JHSG"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Function to search for products
+        function searchProducts() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const productGrid = document.getElementById('productGrid');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Show the loading spinner
+            loadingSpinner.style.display = 'block';
+            productGrid.innerHTML = '';  // Clear the current product grid
+
+            // Fetch all products from Firebase
+            database.ref('products').once('value')
+                .then((snapshot) => {
+                    const products = snapshot.val();
+                    if (products) {
+                        Object.keys(products).forEach((productId) => {
+                            const productData = products[productId];
+                            const productName = productData.productName.toLowerCase();
+
+                            // Check if the product matches the search query
+                            if (productName.includes(searchInput)) {
+                                const productCard = document.createElement('div');
+                                productCard.className = 'product-card';
+                                productCard.onclick = () => {
+                                    window.location.href = `productDetail.html?productId=${productId}`;
+                                };
+
+                                productCard.innerHTML = `
+                                    <img src="${productData.imageUrls[0]}" alt="${productData.productName}">
+                                    <h3>${productData.productName}</h3>
+                                    <p>Price: ${productData.productPrice} ETB</p>
+                                `;
+                                productGrid.appendChild(productCard);
+                            }
+                        });
+                    } else {
+                        productGrid.innerHTML = '<p>No products available.</p>';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error loading products:', error);
+                    alert('Failed to load marketplace.');
+                })
+                .finally(() => {
+                    // Hide the loading spinner after the data is fetched
+                    loadingSpinner.style.display = 'none';
+                });
+        }
+    </script>
+</body>
+</html>

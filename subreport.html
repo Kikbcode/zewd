@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Report</title>
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #15202B;
+            color: #fff;
+        }
+        h2 {
+            color: #1D9BF0;
+        }
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+        textarea {
+            width: 90%;
+            height: 100px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            resize: none;
+            font-size: 14px;
+        }
+        button {
+            background-color: #1D9BF0;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .back-btn {
+            background-color: #e74c3c;
+        }
+        .back-btn:hover {
+            background-color: #c0392b;
+        }
+        .alert {
+            display: none;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #fff;
+        }
+        .alert.success {
+            background-color: #2ecc71;
+        }
+        .alert.error {
+            background-color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Submit a Report</h2>
+        <textarea id="reportText" placeholder="Enter your report details"></textarea>
+        <div>
+            <button onclick="submitReport()">Submit Report</button>
+            <button class="back-btn" onclick="window.history.back();">Back</button>
+        </div>
+        <div id="alertBox" class="alert"></div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAK-dzBJ9sIwgQJ7iR0Kh_MvOLy7i-F3O0",
+            authDomain: "blog-ad58e.firebaseapp.com",
+            databaseURL: "https://blog-ad58e-default-rtdb.firebaseio.com",
+            projectId: "blog-ad58e",
+            storageBucket: "blog-ad58e.appspot.com",
+            messagingSenderId: "921348005047",
+            appId: "1:921348005047:web:2d9797dae380482aa40132",
+            measurementId: "G-WRESM9JHSG"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.innerText = message;
+            alertBox.className = 'alert ' + type;
+            alertBox.style.display = 'block';
+        }
+
+        function submitReport() {
+            const reportText = document.getElementById('reportText').value;
+            const urlParams = new URLSearchParams(window.location.search);
+            const jobId = urlParams.get('jobId');
+
+            if (reportText) {
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        // Fetch job details
+                        database.ref('jobs/' + jobId).once('value')
+                            .then((snapshot) => {
+                                const jobData = snapshot.val();
+                                const reportData = {
+                                    jobId: jobId,
+                                    jobTitle: jobData.title, // Include job title
+                                    userId: user.uid,
+                                    userName: user.displayName || 'Anonymous',
+                                    report: reportText
+                                };
+
+                                database.ref('reports').push(reportData)
+                                    .then(() => {
+                                        showAlert('Report submitted successfully!', 'success');
+                                        setTimeout(() => window.history.back(), 2000);
+                                    })
+                                    .catch((error) => showAlert('Error submitting report: ' + error.message, 'error'));
+                            })
+                            .catch((error) => showAlert('Error fetching job data: ' + error.message, 'error'));
+                    }
+                });
+            } else {
+                showAlert('Please enter report details.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

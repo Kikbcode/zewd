@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+
+    <style>
+        /* General Page Styling */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background: #15202B;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Container for the form */
+        .form-container {
+            background: #253341;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        /* Heading Styling */
+        .form-container h2 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-size: 24px;
+        }
+
+        /* Paragraph Styling */
+        .form-container p {
+            color: #AABBC2;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        /* Button Styling */
+        .form-container button {
+            background-color: #1D9BF0;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        /* Button hover effect */
+        .form-container button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        /* Custom Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .modal-content h3 {
+            margin: 0;
+            font-size: 22px;
+            color: #333;
+        }
+
+        .modal-content p {
+            margin: 10px 0;
+            color: #666;
+        }
+
+        .modal-content button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .modal-content button:hover {
+            background-color: #0056b3;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 30px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-container h2 {
+                font-size: 22px;
+            }
+            .form-container p {
+                font-size: 14px;
+            }
+            .form-container button {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Email Verification</h2>
+        <p>Please check your email and click the verification link to verify your account.</p>
+        <p>If you have already verified, click the button below to proceed.</p>
+        <button id="verifyBtn">Go to Home</button>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <h3 id="alertTitle"></h3>
+            <p id="alertMessage"></p>
+            <button id="closeModal">OK</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAK-dzBJ9sIwgQJ7iR0Kh_MvOLy7i-F3O0",
+            authDomain: "blog-ad58e.firebaseapp.com",
+            databaseURL: "https://blog-ad58e-default-rtdb.firebaseio.com",
+            projectId: "blog-ad58e",
+            storageBucket: "blog-ad58e.appspot.com",
+            messagingSenderId: "921348005047",
+            appId: "1:921348005047:web:2d9797dae380482aa40132",
+            measurementId: "G-WRESM9JHSG"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        document.getElementById('verifyBtn').addEventListener('click', function() {
+            const user = auth.currentUser;
+
+            user.reload().then(() => {
+                if (user.emailVerified) {
+                    showModal("Success", "Email verified successfully!");
+                    document.getElementById('closeModal').addEventListener('click', function() {
+                        window.location.href = 'home.html';
+                    });
+                } else {
+                    showModal("Error", "Please verify your email first.");
+                }
+            });
+        });
+
+        // Function to display the modal
+        function showModal(title, message) {
+            document.getElementById('alertTitle').innerText = title;
+            document.getElementById('alertMessage').innerText = message;
+            document.getElementById('alertModal').style.display = 'flex';
+        }
+
+        // Close modal functionality
+        document.getElementById('closeModal').addEventListener('click', function() {
+            document.getElementById('alertModal').style.display = 'none';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signup Page</title>
+  <link rel="stylesheet" href="/css/signup.css">
+
+  <!-- Firebase App -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+  <!-- Firebase Authentication -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-auth.js"></script>
+  <!-- Firebase Realtime Database -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+  <!-- Firebase Storage -->
+  <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-storage.js"></script>
+
+  <style>
+    /* Circular Progress Loader */
+    .progress-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .progress-wrapper.active {
+      visibility: visible;
+      opacity: 1;
+    }
+    .progress-circle {
+      width: 65px;
+      aspect-ratio: 1;
+      position: relative;
+    }
+    .progress-circle:before,
+    .progress-circle:after {
+      content: "";
+      position: absolute;
+      border-radius: 50px;
+      box-shadow: 0 0 0 3px inset #fff;
+      animation: l4 2.5s infinite;
+    }
+    .progress-circle:after {
+      animation-delay: -1.25s;
+    }
+    @keyframes l4 {
+      0% {
+        inset: 0 35px 35px 0;
+      }
+      12.5% {
+        inset: 0 35px 0 0;
+      }
+      25% {
+        inset: 35px 35px 0 0;
+      }
+      37.5% {
+        inset: 35px 0 0 0;
+      }
+      50% {
+        inset: 35px 0 0 35px;
+      }
+      62.5% {
+        inset: 0 0 0 35px;
+      }
+      75% {
+        inset: 0 0 35px 35px;
+      }
+      87.5% {
+        inset: 0 0 35px 0;
+      }
+      100% {
+        inset: 0 35px 35px 0;
+      }
+    }
+
+    /* Custom Alert Modal */
+    .alert-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 400px;
+      background-color: #fff;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      border-radius: 8px;
+      z-index: 9999;
+      text-align: center;
+      display: none;
+      animation: fadeIn 0.5s forwards;
+    }
+
+    .alert-modal.show {
+      display: block;
+    }
+
+    .alert-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .alert-message {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    .alert-close-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translate(-50%, -60%); }
+      100% { opacity: 1; transform: translate(-50%, -50%); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="progress-wrapper" id="progress-wrapper">
+    <div class="progress-circle"></div>
+  </div>
+
+  <div class="container">
+    <h2>Signup to zewd</h2>
+    <div class="profile-pic">
+      <img src="https://via.placeholder.com/100" id="profilePic" alt="Profile Picture">
+      <label class="upload-btn" for="profileUpload">Upload Profile Picture</label>
+      <input type="file" id="profileUpload" accept="image/*" onchange="previewImage(event)">
+    </div>
+    <form id="registration-form">
+      <input type="text" id="name" placeholder="Full Name" required>
+      <input type="tel" id="phone" placeholder="Phone Number" required>
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Signup</button>
+    </form>
+    <p class="text-switch">Already have an account? <a href="login.html">Login</a></p>
+  </div>
+
+  <!-- Custom Alert Modal -->
+  <div id="alertModal" class="alert-modal">
+    <h2 class="alert-title" id="alertTitle"></h2>
+    <p class="alert-message" id="alertMessage"></p>
+    <button class="alert-close-btn" onclick="closeAlert()">Close</button>
+  </div>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAK-dzBJ9sIwgQJ7iR0Kh_MvOLy7i-F3O0",
+      authDomain: "blog-ad58e.firebaseapp.com",
+      databaseURL: "https://blog-ad58e-default-rtdb.firebaseio.com",
+      projectId: "blog-ad58e",
+      storageBucket: "blog-ad58e.appspot.com",
+      messagingSenderId: "921348005047",
+      appId: "1:921348005047:web:2d9797dae380482aa40132",
+      measurementId: "G-WRESM9JHSG"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+    const storage = firebase.storage();
+
+    const form = document.querySelector("#registration-form");
+    const profileUpload = document.getElementById('profileUpload');
+    const profilePic = document.getElementById('profilePic');
+    const progressWrapper = document.getElementById('progress-wrapper');
+
+    function previewImage(event) {
+      const reader = new FileReader();
+      reader.onload = function() {
+        profilePic.src = reader.result;
+      };
+      reader.readAsDataURL(event.target.files[0]);
+    }
+    form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phonePattern = /^[0-9]+$/;
+
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const profilePicFile = profileUpload.files[0];
+
+  if (!profilePicFile) {
+    showAlert('Error', 'Please upload a profile picture.');
+    return; // Stop form submission if no profile picture is selected
+  }
+
+  if (emailPattern.test(email) && password.length >= 8 && phonePattern.test(phone)) {
+    // Show progress bar
+    progressWrapper.classList.add("active");
+
+    auth.createUserWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+
+        // Send verification email
+        user.sendEmailVerification()
+          .then(() => {
+            showAlert('Email Sent', 'A verification email has been sent to ' + email);
+          })
+          .catch((error) => {
+            showAlert('Error', 'Error sending verification email: ' + error.message);
+          });
+
+        const userData = {
+          name: name,
+          phone: phone,
+          email: email
+        };
+
+        const storageRef = storage.ref('profilePics/' + user.uid);
+        storageRef.put(profilePicFile).then(() => {
+          storageRef.getDownloadURL().then((url) => {
+            userData.profilePic = url;
+            database.ref('users/' + user.uid).set(userData)
+              .then(() => {
+                // Hide progress bar
+                progressWrapper.classList.remove("active");
+                showAlert("Success", "Registration successful. Please verify your email.");
+                setTimeout(() => window.location.href = 'verification.html', 3000);
+              })
+              .catch((error) => {
+                // Hide progress bar and show error
+                progressWrapper.classList.remove("active");
+                showAlert('Error', 'Error saving user data: ' + error.message);
+              });
+          });
+        }).catch((error) => {
+          progressWrapper.classList.remove("active");
+          showAlert('Error', 'Error uploading profile picture: ' + error.message);
+        });
+      })
+      .catch((error) => {
+        progressWrapper.classList.remove("active");
+        showAlert('Error', error.message);
+      });
+  } else {
+    showAlert('Invalid Input', 'Please make sure all fields are filled out correctly.');
+  }
+});
+
+ 
+
+    function showAlert(title, message) {
+      const alertModal = document.getElementById('alertModal');
+      const alertTitle = document.getElementById('alertTitle');
+      const alertMessage = document.getElementById('alertMessage');
+      alertTitle.textContent = title;
+      alertMessage.textContent = message;
+      alertModal.classList.add('show');
+    }
+
+    function closeAlert() {
+      const alertModal = document.getElementById('alertModal');
+      alertModal.classList.remove('show');
+    }
+  </script>
+</body>
+</html>

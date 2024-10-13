@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job List</title>
+    <link rel="stylesheet" href="/css/home.css"> 
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@latest/css/boxicons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Firebase App -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+    <!-- Firebase Authentication -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-auth.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+    <!-- Firebase Storage -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-storage.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Anton+SC&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton+SC&family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header>
+        <a href="home.html" class="logo"><img src="/img/zewd.png" alt=""></a>
+
+
+        <ul class="navbar">
+           
+            <li><a href="workerlist.html">Services</a></li>
+            <li class="dropdown"> <a>Post <i class='bx bxs-down-arrow' style="font-size: 12px;"></i></a>
+                <ul class="dropdown-content">
+                  <li><a href="upload.html">Post Job</a></li>
+                  <li><a href="postservice.html">Post services</a></li>
+                  <li><a href="myposts.html">My posts</a></li>
+                  <li><a href="marketplace.html">Marketplace</a></li>
+                  <li><a href="messages.html">Message</a></li>
+                </ul>
+              </li>
+            <li><a href="user.html"><i class='bx bx-user'></i> Profile</a></li>
+            <li><a href="page/support.html"><i class='bx bx-support'></i> support</a></li>
+        </ul>
+
+
+        <div class="toggle_btn">
+          <i class="bx bx-menu"></i> 
+        </div>
+
+
+        <div class="dropdown_menu ">
+            
+            <li><a href="workerlist.html">services</a></li>      
+            <li><a href="upload.html">Post Job</a></li>
+            <li><a href="postservice.html">Post services</a></li>
+            <li><a href="myposts.html">My posts</a></li>
+            <li><a href="marketplace.html">Marketplace</a></li>
+            <li><a href="messages.html">Message</a></li>
+            <li><a href="user.html"><i class='bx bx-user'></i> Profile</a></li>
+            <li><a href="page/support.html"><i class='bx bx-support'></i> support</a></li>
+        </div>
+      </header>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div id="loadingContainer">
+    <div class="loader" id="loadingSpinner"></div>
+</div>
+
+<div class="job-list-container">
+    <ul id="jobList" class="job-list"></ul>
+</div>
+
+
+<script>
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyAK-dzBJ9sIwgQJ7iR0Kh_MvOLy7i-F3O0",
+        authDomain: "blog-ad58e.firebaseapp.com",
+        databaseURL: "https://blog-ad58e-default-rtdb.firebaseio.com",
+        projectId: "blog-ad58e",
+        storageBucket: "blog-ad58e.appspot.com",
+        messagingSenderId: "921348005047",
+        appId: "1:921348005047:web:2d9797dae380482aa40132",
+        measurementId: "G-WRESM9JHSG"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    function loadJobs() {
+    const jobList = document.getElementById('jobList');
+    const loadingContainer = document.getElementById('loadingContainer');
+    
+    loadingContainer.style.display = 'flex'; // Show loading overlay
+
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            const currentUserId = user.uid;
+
+            database.ref('jobs')
+                .orderByChild('timestamp')
+                .limitToLast(100)
+                .once('value')
+                .then((snapshot) => {
+                    jobList.innerHTML = ''; // Clear existing jobs
+
+                    const jobs = [];
+                    snapshot.forEach((jobSnapshot) => {
+                        const jobData = jobSnapshot.val();
+                        const jobId = jobSnapshot.key;
+
+                        jobs.push({ id: jobId, data: jobData });
+                    });
+
+                    if (jobs.length === 0) {
+                        // No jobs available, show the message
+                        jobList.innerHTML = '<p class="nojob">No jobs available at the moment.</p>';
+                    } else {
+                        jobs.sort((a, b) => b.data.timestamp - a.data.timestamp);
+
+                        jobs.forEach(({ id, data }) => {
+                            database.ref('users/' + data.uploader).once('value')
+                                .then((userSnapshot) => {
+                                    const uploaderData = userSnapshot.val();
+
+                                    const listItem = document.createElement('li');
+                                    listItem.className = 'job-item';
+                                    listItem.onclick = () => handleJobClick(id, data, currentUserId);
+
+                                    listItem.innerHTML = `
+                                    <div class="job-info">
+                                        <p class="time">Posted ${timeAgo(data.timestamp)}</p>
+                                        <h3>${data.title}</h3>
+                                        <p>Salary ${data.salary} ETB</p><br>
+                                        <div class="cnt">
+                                            <p><i class='bx bx-show'></i>${data.views || 0}</p>
+                                            <p>Uploaded by ${uploaderData.name}</p>
+                                        </div>
+                                    </div>
+                                    `;
+                                    jobList.appendChild(listItem);
+                                })
+                                .catch((error) => alert('Error loading uploader data: ' + error.message));
+                        });
+                    }
+
+                    loadingContainer.style.display = 'none'; // Hide loading overlay after loading
+                })
+                .catch((error) => {
+                    alert('Error loading jobs: ' + error.message);
+                    loadingContainer.style.display = 'none'; // Hide overlay on error
+                });
+        } else {
+            window.location.href = 'login.html';
+        }
+    });
+}
+
+    function handleJobClick(jobId, jobData, currentUserId) {
+        // Check if the user has already viewed this job
+        database.ref(`jobs/${jobId}/viewers/${currentUserId}`).once('value')
+            .then((snapshot) => {
+                if (!snapshot.exists()) {
+                    // If the user hasn't viewed it, increment the view count
+                    const newViews = (jobData.views || 0) + 1;
+                    database.ref(`jobs/${jobId}`).update({
+                        views: newViews
+                    });
+
+                    // Add the user ID to the list of viewers
+                    database.ref(`jobs/${jobId}/viewers/${currentUserId}`).set(true);
+                }
+
+                // Redirect to the job detail page
+                window.location.href = `jobDetail.html?jobId=${jobId}`;
+            });
+    }
+
+    window.onpopstate = function(event) {
+        // Check if user is on the home page and you want to handle the back action
+        if (window.location.pathname === '/home.html') {
+            // Redirect to the login page if they try to go back from home
+            window.location.href = 'index.html';
+        } else {
+            // Allow normal back navigation
+            history.back();
+        }
+    };
+
+    function timeAgo(timestamp) {
+        const now = Date.now();
+        const seconds = Math.floor((now - timestamp) / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+        const months = Math.floor(days / 30); // Approximate month length
+        const years = Math.floor(days / 365); // Approximate year length
+
+        if (years > 1) return `${years} years ago`;
+        if (years === 1) return `1 year ago`;
+        if (months > 1) return `${months} months ago`;
+        if (months === 1) return `1 month ago`;
+        if (days > 1) return `${days} days ago`;
+        if (days === 1) return `1 day ago`;
+        if (hours > 1) return `${hours} hours ago`;
+        if (hours === 1) return `1 hour ago`;
+        if (minutes > 1) return `${minutes} minutes ago`;
+        if (minutes === 1) return `1 minute ago`;
+        return `Just now`;
+    }
+
+    window.onload = loadJobs;
+
+
+
+  
+
+
+
+</script>
+<script src="/js/main.js" ></script>
+
+
+
+</body>
+</html>

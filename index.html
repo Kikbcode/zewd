@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>zewd</title>
+    <style>
+        /* Global Styles */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: #253341;
+            
+        }
+        section{
+            display: flex;
+         flex-direction: column;
+          align-items: center;
+        }
+       
+        .splash-container {
+            padding: 60px;
+           
+        }
+        
+        footer {
+            margin-top: 20%; 
+
+         }
+
+    
+        .logo{
+            width: 200px;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+       
+
+
+
+ footer  {
+    display: flex;
+    flex-direction: column;
+    align-items: center ;
+    font-family: "Inter", sans-serif;
+    font-size: 1rem; 
+    color: #AAB8C2;   
+}
+.nox {
+            width: 50px;
+            
+           
+         
+        }
+footer p  {
+    display: flex;
+    flex-direction: column;
+    align-items: center ;
+    font-family: "Inter", sans-serif;
+    font-size: 14px; 
+    color: #AAB8C2; 
+    margin: 2px;  
+}
+
+        /* Animation */
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 1024px) {
+          
+  
+  .splash-container {
+         padding: 85px;
+        
+     }
+     .logo {
+         width: 350px;
+      
+     }
+  footer {
+         margin-top: 70%; 
+
+      }
+
+}
+
+        @media (max-width: 820px) {
+  
+     .splash-container {
+            padding: 85px;
+           
+        }
+        .logo {
+            width: 350px;
+         
+        }
+     footer {
+            margin-top: 70%; 
+
+         }
+
+}
+        @media (max-width: 770px) {
+          
+            .splash-container {
+            padding: 80px;
+           
+        }
+        .logo {
+            width: 390px;
+         
+        }
+    
+        
+         footer {
+            margin-top: 50%; 
+
+         }
+
+}
+
+@media (max-width: 480px) {
+    .splash-container {
+            padding: 80px;
+           
+        }
+        .logo {
+            width: 300px;
+         
+        }
+     
+        
+         footer {
+            margin-top: 80%; 
+
+         }
+
+}
+
+
+
+@media (max-width: 385px) {
+   
+
+        .splash-container {
+            padding: 60px;
+           
+        }
+        .logo {
+            width: 260px;
+         
+        }
+       
+        
+         footer {
+            margin-top: 70%; 
+
+         }
+       
+}
+@media (max-width: 345px) {
+   
+
+   .splash-container {
+       padding: 80px;
+      
+   }
+   .logo {
+       width: 260px;
+    
+   }
+  
+   
+    footer {
+       margin-top: 100%; 
+
+    }
+  
+}
+        
+    </style>
+</head>
+<body>
+    <section>
+        <div class="splash-container"></div>
+          <img src="/img/zewd.png" class="logo">
+         </div>
+     </section>
+ 
+   
+   
+    <footer>
+           <p class="text">from</p>
+            <img src="/img/logonox 1.png" class="nox" >
+              
+    </footer>
+
+   <script>
+       
+        setTimeout(function() {
+            window.location.href = "home.html"; 
+        }, 8000); 
+    </script> 
+</body>
+</html>

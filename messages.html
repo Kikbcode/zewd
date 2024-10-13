@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.css">
+    <style>
+        body {
+            background-color: #15202B ;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            color: #aabbc2;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .loader {
+            width: 65px;
+            aspect-ratio: 1;
+            position: relative;
+            
+        }
+        strong{
+            color: #64686a;
+        }
+        .loader:before,
+        .loader:after {
+            content: "";
+            position: absolute;
+            border-radius: 50px;
+            box-shadow: 0 0 0 3px inset #fff;
+            animation: l4 2.5s infinite;
+        }
+        .loader:after {
+            animation-delay: -1.25s;
+        }
+        @keyframes l4 {
+            0% { inset: 0 35px 35px 0; }
+            12.5% { inset: 0 35px 0 0; }
+            25% { inset: 35px 35px 0 0; }
+            37.5% { inset: 35px 0 0 0; }
+            50% { inset: 35px 0 0 35px; }
+            62.5% { inset: 0 0 0 35px; }
+            75% { inset: 0 0 35px 35px; }
+            87.5% { inset: 0 0 35px 0; }
+            100% { inset: 0 35px 35px 0; }
+        }
+        #loadingContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(21, 32, 43, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .proposal-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            background-color: #592d32; /* Bootstrap danger color */
+            color: white;
+        }
+        .btn{
+            background-color: #ff5a6d;
+            color: #fff;
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingContainer" style="display: none;">
+        <div class="loader" id="loadingSpinner"></div>
+    </div>
+    
+    <h2><i class="fas fa-paper-plane"></i> Job Proposals</h2>
+    <div id="proposalsList" class="container"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAK-dzBJ9sIwgQJ7iR0Kh_MvOLy7i-F3O0",
+            authDomain: "blog-ad58e.firebaseapp.com",
+            databaseURL: "https://blog-ad58e-default-rtdb.firebaseio.com",
+            projectId: "blog-ad58e",
+            storageBucket: "blog-ad58e.appspot.com",
+            messagingSenderId: "921348005047",
+            appId: "1:921348005047:web:2d9797dae380482aa40132",
+            measurementId: "G-WRESM9JHSG"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        function loadProposalsForJobOwner() {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    const userId = user.uid;
+                    document.getElementById('loadingContainer').style.display = 'flex'; // Show loading spinner
+
+                    // Get all jobs uploaded by this user (the job owner)
+                    database.ref('jobs').orderByChild('uploader').equalTo(userId).once('value')
+                        .then((snapshot) => {
+                            const jobs = snapshot.val();
+                            const proposalsList = document.getElementById('proposalsList');
+                            proposalsList.innerHTML = ''; // Clear existing proposals
+
+                            if (jobs) {
+                                const jobIds = Object.keys(jobs);
+                                let promises = [];
+
+                                jobIds.forEach(jobId => {
+                                    promises.push(
+                                        database.ref('proposals').orderByChild('jobId').equalTo(jobId).once('value')
+                                            .then((proposalSnapshot) => {
+                                                const proposals = proposalSnapshot.val();
+
+                                                if (proposals) {
+                                                    Object.keys(proposals).forEach(proposalId => {
+                                                        const proposalData = proposals[proposalId];
+                                                        const listItem = document.createElement('div');
+
+                                                        listItem.classList.add('proposal-item');
+                                                        listItem.innerHTML = `
+                                                            <strong >Job Title</strong>   ${proposalData.jobTitle}<br>
+                                                            <strong>Job Description</strong>   ${proposalData.jobDescription}<br>
+                                                            <strong>Proposal</strong>   ${proposalData.proposal}<br>
+                                                            <strong>Submitted By</strong>   ${proposalData.userName}<br>
+                                                            <strong>Phone</strong>   ${proposalData.userPhone}<br>
+                                                            <strong>Submitted At</strong>   ${new Date(proposalData.timestamp).toLocaleString()}<br>
+                                                            <button class="btn ; onclick="deleteProposal('${proposalId}')">Delete Proposal</button>
+                                                        `;
+
+                                                        proposalsList.appendChild(listItem);
+                                                    });
+                                                }
+                                            })
+                                    );
+                                });
+
+                                // Wait for all promises to resolve
+                                Promise.all(promises).finally(() => {
+                                    document.getElementById('loadingContainer').style.display = 'none'; // Hide loading spinner
+                                });
+                            } else {
+                                document.getElementById('loadingContainer').style.display = 'none'; // Hide loading spinner
+                                swal("No Proposals", "You have no job proposals yet.", "info");
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Error loading proposals:', error);
+                            alert('Failed to load proposals.');
+                            document.getElementById('loadingContainer').style.display = 'none';
+                        });
+                } else {
+                    swal("Unauthorized", "Please log in to view proposals.", "warning")
+                        .then(() => {
+                            window.location.href = 'login.html';
+                        });
+                }
+            });
+        }
+
+        function deleteProposal(proposalId) {
+            swal({
+                title: "Are you sure?",
+                text: "Once deleted, you will not be able to recover this proposal!",
+                icon: "warning",
+                buttons: true,
+                dangerMode: true,
+            }).then((willDelete) => {
+                if (willDelete) {
+                    // Delete the proposal from the database
+                    database.ref('proposals/' + proposalId).remove()
+                        .then(() => {
+                            swal("Deleted!", "Proposal deleted successfully.", "success");
+                            // Refresh the proposal list
+                            document.getElementById('proposalsList').innerHTML = '';
+                            loadProposalsForJobOwner();
+                        })
+                        .catch((error) => {
+                            console.error('Error deleting proposal:', error);
+                            swal("Error", "Failed to delete proposal.", "error");
+                        });
+                }
+            });
+        }
+
+        loadProposalsForJobOwner();
+    </script>
+</body>
+</html>

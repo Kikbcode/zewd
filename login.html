@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <!-- Firebase App -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-app.js"></script>
+    <!-- Firebase Authentication -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.7/firebase-auth.js"></script>
+    <link rel="stylesheet" href="/css/signup.css">
+</head>
+<body>
+    <div class="progress-wrapper" id="progress-wrapper">
+        <div class="progress-circle"></div>
+    </div>
+    <div class="container">
+        <h2>Login to zewd</h2>
+        <form id="login-form">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <a href="forget.html" class="forgot-link">Forgot Password?</a>
+            <button type="submit">Login</button>
+            <p class="text-switch">Don't have an account? <a href="signup.html">Sign up</a></p>
+        </form>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div class="modal" id="errorModal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Error</h3>
+            <p id="error-message"></p>
+            <button id="closeModalBtn">Close</button>
+        </div>
+    </div>
+
+    <style>
+        .forgot-link {
+            font-size: 12px;
+            display: block;
+            margin: 10px 0;
+            text-align: end;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .forgot-link:hover {
+            text-decoration: underline;
+        }
+
+        .progress-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            visibility: hidden; /* Hide by default */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .progress-wrapper.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .progress-circle {
+            width: 65px;
+            aspect-ratio: 1;
+            position: relative;
+        }
+        .progress-circle:before,
+        .progress-circle:after {
+            content: "";
+            position: absolute;
+            border-radius: 50px;
+            box-shadow: 0 0 0 3px inset #fff;
+            animation: l4 2.5s infinite;
+        }
+        .progress-circle:after {
+            animation-delay: -1.25s;
+        }
+        @keyframes l4 {
+            0% { inset: 0 35px 35px 0; }
+            12.5% { inset: 0 35px 0 0; }
+            25% { inset: 35px 35px 0 0; }
+            37.5% { inset: 35px 0 0 0; }
+            50% { inset: 35px 0 0 35px; }
+            62.5% { inset: 0 0 0 35px; }
+            75% { inset: 0 0 35px 35px; }
+            87.5% { inset: 0 0 35px 0; }
+            100% { inset: 0 35px 35px 0; }
+        }
+
+        /* Modal styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            font-size: 24px;
+            color: #e74c3c;
+        }
+
+        .modal-content p {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #closeModalBtn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #closeModalBtn:hover {
+            background-color: #0056b3;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+    </style>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAK-dzBJ9sIwgQJ7iR0Kh_MvOLy7i-F3O0",
+            authDomain: "blog-ad58e.firebaseapp.com",
+            databaseURL: "https://blog-ad58e-default-rtdb.firebaseio.com",
+            projectId: "blog-ad58e",
+            storageBucket: "blog-ad58e.appspot.com",
+            messagingSenderId: "921348005047",
+            appId: "1:921348005047:web:2d9797dae380482aa40132",
+            measurementId: "G-WRESM9JHSG"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // Check if user is already logged in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                window.location.href = 'home.html';
+            }
+        });
+
+        const form = document.querySelector("#login-form");
+        const progressWrapper = document.getElementById("progress-wrapper");
+        const errorModal = document.getElementById('errorModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const errorMessageElem = document.getElementById('error-message');
+
+        form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    // Show progress bar
+    progressWrapper.classList.add("active");
+
+    auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+            // Hide progress bar and redirect
+            progressWrapper.classList.remove("active");
+            window.location.href = 'home.html';
+        })
+        .catch((error) => {
+            // Hide progress bar
+            progressWrapper.classList.remove("active");
+
+            // Friendly error message handling
+            let friendlyMessage;
+            switch (error.code) {
+                case 'auth/user-not-found':
+                    friendlyMessage = "This email is not registered. Please sign up first.";
+                    break;
+                case 'auth/wrong-password':
+                    friendlyMessage = "Wrong password. Please try again.";
+                    break;
+                case 'auth/invalid-email':
+                    friendlyMessage = "Invalid email format. Please check and try again.";
+                    break;
+                case 'auth/user-disabled':
+                    friendlyMessage = "This account has been disabled. Please contact support.";
+                    break;
+                default:
+                    friendlyMessage = "An error occurred. Please check your email or password.";
+            }
+
+            // Display error modal with friendly message
+            errorMessageElem.textContent = friendlyMessage;
+            errorModal.style.display = 'flex';
+        });
+});
+
+        // Close modal functionality
+        closeModalBtn.addEventListener('click', () => {
+            errorModal.style.display = 'none';
+        });
+        document.querySelector('.close').addEventListener('click', () => {
+            errorModal.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
